@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fusion OS v28 — MetaPulso Edition</title>
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050505">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg: #050505;
+      --active-color: #38BDF8;
+      --active-glow: rgba(56,189,248,0.18);
+      --accent-secondary: #0EA5E9;
+      --panel-width: 100vw;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: #fff; font-family: "SF Pro Display", -apple-system, sans-serif; overflow: hidden; }
+    
+    /* Ambient Canvas */
+    .ambient-glow { position: fixed; pointer-events: none; z-index: 0; border-radius: 50%; filter: blur(100px); transition: all 1.2s ease; }
+    #glow-top { top: -20%; left: -20%; width: 80vw; height: 80vw; background: var(--active-color); opacity: 0.15; }
+    #glow-bottom { bottom: -20%; right: -20%; width: 80vw; height: 80vw; background: var(--accent-secondary); opacity: 0.1; }
+
+    /* Layout Engine */
+    #universe-viewport {
+      display: flex;
+      width: 300vw;
+      height: 100vh;
+      transform: translateX(-100vw);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative; z-index: 10;
+    }
+    .screen-panel { width: 100vw; height: 100vh; flex-shrink: 0; position: relative; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
+
+    /* UI Modes */
+    :root[data-uinode="UNO"] #universe-viewport { display: block; width: 100vw; height: auto; transform: none !important; overflow-y: scroll; }
+    :root[data-uinode="UNO"] .screen-panel { height: 100vh; }
+    
+    :root[data-uinode="DUAL"] #universe-viewport { transform: translateX(0); width: 200vw; }
+    :root[data-uinode="DUAL"] .screen-panel { width: 50vw; border-right: 1px solid rgba(255,255,255,0.05); }
+
+    :root[data-uinode="TRINITY"] #universe-viewport { transform: translateX(0); width: 100vw; }
+    :root[data-uinode="TRINITY"] .screen-panel { width: 33.33vw; border-right: 1px solid rgba(255,255,255,0.05); }
+
+    /* Glassmorphism */
+    .glass-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; backdrop-filter: blur(10px); transition: 0.3s; }
+    .glass-card:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); }
+    .glass-pill { background: rgba(255,255,255,0.05); border-radius: 999px; padding: 6px 14px; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .glass-pill:hover { background: rgba(255,255,255,0.1); }
+
+    /* Global Player */
+    #global-player {
+      position: fixed; right: 20px; bottom: 20px; z-index: 1000;
+      width: 320px; height: 180px; border-radius: 16px;
+      background: #000; border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8); overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #global-player.minimized { width: 60px; height: 60px; border-radius: 30px; }
+    #global-player iframe { width: 100%; height: 100%; border: 0; }
+
+    /* Navigation Indicator */
+    #nav-indicator { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; }
+    .dot { width: 6px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.2); transition: 0.3s; }
+    .dot.active { width: 24px; background: var(--active-color); box-shadow: 0 0 10px var(--active-color); }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body data-uinode="DUAL">
+
+  <div id="glow-top" class="ambient-glow"></div>
+  <div id="glow-bottom" class="ambient-glow"></div>
+
+  <!-- Header System -->
+  <header class="fixed top-0 left-0 right-0 z-[200] px-8 py-6 flex justify-between items-center pointer-events-none">
+    <div class="pointer-auto flex items-center gap-4">
+      <div class="glass-pill" onclick="UI.showIdentityModal()">
+        <div id="header-status-dot" class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
+        <span id="displayUserHeader">PILOTO</span>
+      </div>
+      <div class="glass-pill" onclick="UI.cycleArchetype()">
+        <span id="displayArchetypeBadge">VITALIS</span>
+      </div>
+    </div>
+
+    <div class="pointer-auto flex items-center gap-2">
+      <div class="glass-pill px-2">
+        <button class="px-2 hover:text-sky-400 transition" onclick="UI.setMode('UNO')">UNO</button>
+        <button class="px-2 hover:text-sky-400 transition" onclick="UI.setMode('DUAL')">DUAL</button>
+        <button class="px-2 hover:text-sky-400 transition" onclick="UI.setMode('TRINITY')">TRI</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="universe-viewport">
+    
+    <!-- PONTO 0: CÓRTEX -->
+    <section class="screen-panel" id="view-cortex">
+      <div class="max-w-4xl mx-auto pt-28 px-8 pb-20">
+        <div class="flex justify-between items-end mb-8">
+          <div>
+            <h2 class="text-4xl font-black tracking-tighter">Córtex</h2>
+            <p class="text-[10px] text-white/30 uppercase mt-1">Registros de Sincronia</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="Cortex.setTab('memories')" class="glass-pill">Memórias</button>
+            <button onclick="Cortex.setTab('triads')" class="glass-pill">Tríades</button>
+          </div>
+        </div>
+
+        <div id="cortex-content">
+          <div id="memory-view">
+            <div class="glass-card p-4 mb-6 flex gap-4">
+              <input id="mem-input" type="text" placeholder="Fixar nova percepção..." class="bg-transparent flex-1 border-none text-sm outline-none">
+              <button onclick="Cortex.addMemory()" class="glass-pill">Cristalizar</button>
+            </div>
+            <div id="memory-list" class="space-y-4"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PONTO 1: NEXUS (Home) -->
+    <section class="screen-panel" id="view-nexus">
+      <div class="h-full flex flex-col items-center justify-center px-8 text-center">
+        <!-- THE ORB -->
+        <div id="orb-container" class="relative w-80 h-80 mb-12 cursor-pointer group" onclick="UI.pulse()">
+          <div class="absolute inset-0 rounded-full border border-white/10 group-hover:border-white/20 transition-all duration-700"></div>
+          <div class="absolute inset-4 rounded-full border border-white/5 animate-[spin_10s_linear_infinite]"></div>
+          <div id="orb-core" class="absolute inset-0 flex items-center justify-center">
+            <div class="w-4 h-4 rounded-full bg-white shadow-[0_0_30px_#fff] transition-all duration-500"></div>
+          </div>
+          <!-- SVG Pulso -->
+          <svg class="absolute inset-0 w-full h-full rotate-[-90deg]">
+            <circle cx="160" cy="160" r="150" fill="none" stroke="currentColor" stroke-width="1" class="text-white/10" />
+            <circle id="orb-progress" cx="160" cy="160" r="150" fill="none" stroke="var(--active-color)" stroke-width="2" stroke-dasharray="942" stroke-dashoffset="942" class="transition-all duration-1000" />
+          </svg>
+        </div>
+
+        <h1 id="system-title" class="text-6xl font-black tracking-tighter mb-2">METAPULSO</h1>
+        <p id="system-subtitle" class="text-white/40 text-xs uppercase tracking-[0.3em]">Sistema de Sincronização Ativo</p>
+        
+        <div class="mt-12 grid grid-cols-2 gap-4 max-w-lg w-full">
+          <div class="glass-card p-6 text-left">
+            <span class="text-[9px] text-white/40 uppercase">Frequência</span>
+            <div class="text-xl font-bold mt-1">432Hz</div>
+          </div>
+          <div class="glass-card p-6 text-left">
+            <span class="text-[9px] text-white/40 uppercase">Sincronia</span>
+            <div id="sync-percent" class="text-xl font-bold mt-1">88%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PONTO 2: DUALTUBE -->
+    <section class="screen-panel" id="view-dualtube">
+      <div class="max-w-6xl mx-auto pt-28 px-8 pb-20">
+        <div class="flex justify-between items-end mb-12">
+          <div>
+            <h2 class="text-4xl font-black tracking-tighter">DualTube</h2>
+            <p class="text-[10px] text-white/30 uppercase mt-1">Curadoria de Alta Performance</p>
+          </div>
+        </div>
+
+        <div id="dt-categories" class="space-y-12">
+          <!-- Categorias Dinâmicas -->
+        </div>
+
+        <div class="mt-16">
+          <h3 class="text-xs uppercase text-white/40 mb-4 tracking-widest">Laboratório de Apps</h3>
+          <div id="dynamic-sandbox" class="glass-card w-full aspect-video flex items-center justify-center overflow-hidden">
+             <div class="text-white/10 text-sm">Aguardando Injeção de Código...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Persistent Nav -->
+  <nav id="nav-indicator">
+    <div class="dot" onclick="Navigation.to(0)"></div>
+    <div class="dot active" onclick="Navigation.to(1)"></div>
+    <div class="dot" onclick="Navigation.to(2)"></div>
+  </nav>
+
+  <!-- Global Player -->
+  <div id="global-player" class="hidden">
+    <div class="absolute top-2 right-2 flex gap-2 z-10">
+      <button onclick="Player.toggleSize()" class="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs hover:bg-white/20">□</button>
+      <button onclick="Player.stop()" class="w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs hover:bg-red-500/50">✕</button>
+    </div>
+    <div id="player-mount" class="w-full h-full"></div>
+  </div>
+
+  <script>
+    /* ==========================================
+       CONFIG & STATE (MetaPulso Integrated)
+       ========================================== */
+    const ARCHETYPES = {
+      VITALIS: { color: '#22C55E', secondary: '#16A34A', desc: 'Energia Vital e Ação Direta', vid: '_0wVkryxanE' },
+      ATLAS: { color: '#38BDF8', secondary: '#0EA5E9', desc: 'Estrutura, Ordem e Governo', vid: 'Bt_rLbMjJDk' },
+      NOVA: { color: '#F97316', secondary: '#EA580C', desc: 'Inovação e Expansão Criativa', vid: 'qldgs0aLdB0' },
+      SOLUS: { color: '#A855F7', secondary: '#9333EA', desc: 'Vazio, Silêncio e Essência', vid: 'hfQ1L6fCfAo' }
+    };
+
+    const STATE = {
+      currentIdx: 1,
+      archetype: 'VITALIS',
+      user: 'PILOTO',
+      memories: JSON.parse(localStorage.getItem('di_cortex_v28') || '[]'),
+      stats: { watched: 0 }
+    };
+
+    /* ==========================================
+       CORE ENGINE
+       ========================================== */
+    const UI = {
+      init() {
+        lucide.createIcons();
+        this.updateTheme();
+        this.renderMemories();
+        this.renderVideos();
+        
+        // Listeners
+        window.addEventListener('resize', () => this.handleResize());
+      },
+
+      setMode(mode) {
+        document.body.dataset.uinode = mode;
+        this.handleResize();
+        toast(`MODO: ${mode}`);
+      },
+
+      updateTheme() {
+        const arch = ARCHETYPES[STATE.archetype];
+        document.documentElement.style.setProperty('--active-color', arch.color);
+        document.documentElement.style.setProperty('--active-glow', `${arch.color}33`);
+        document.documentElement.style.setProperty('--accent-secondary', arch.secondary);
+        
+        document.getElementById('displayArchetypeBadge').innerText = STATE.archetype;
+        document.getElementById('orb-progress').style.stroke = arch.color;
+      },
+
+      cycleArchetype() {
+        const keys = Object.keys(ARCHETYPES);
+        let nextIdx = (keys.indexOf(STATE.archetype) + 1) % keys.length;
+        STATE.archetype = keys[nextIdx];
+        this.updateTheme();
+        toast(`ARQUÉTIPO: ${STATE.archetype}`);
+      },
+
+      pulse() {
+        const orb = document.getElementById('orb-core').firstElementChild;
+        orb.style.transform = 'scale(4)';
+        orb.style.opacity = '0';
+        setTimeout(() => {
+          orb.style.transform = 'scale(1)';
+          orb.style.opacity = '1';
+        }, 500);
+      }
+    };
+
+    const Navigation = {
+      to(idx) {
+        if (document.body.dataset.uinode === 'UNO') {
+          const panels = document.querySelectorAll('.screen-panel');
+          panels[idx].scrollIntoView({ behavior: 'smooth' });
+        } else {
+          const viewport = document.getElementById('universe-viewport');
+          viewport.style.transform = `translateX(-${idx * 100}vw)`;
+        }
+        
+        STATE.currentIdx = idx;
+        const dots = document.querySelectorAll('.dot');
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      }
+    };
+
+    const Cortex = {
+      addMemory() {
+        const input = document.getElementById('mem-input');
+        if (!input.value) return;
+        
+        const mem = {
+          id: Date.now(),
+          text: input.value,
+          arch: STATE.archetype,
+          ts: new Date().toLocaleTimeString()
+        };
+        
+        STATE.memories.unshift(mem);
+        localStorage.setItem('di_cortex_v28', JSON.stringify(STATE.memories));
+        input.value = '';
+        UI.renderMemories();
+        toast("Cristalizado");
+      }
+    };
+
+    const Player = {
+      play(id) {
+        const player = document.getElementById('global-player');
+        const mount = document.getElementById('player-mount');
+        player.classList.remove('hidden');
+        mount.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1" allow="autoplay"></iframe>`;
+      },
+      stop() {
+        document.getElementById('global-player').classList.add('hidden');
+        document.getElementById('player-mount').innerHTML = '';
+      },
+      toggleSize() {
+        document.getElementById('global-player').classList.toggle('minimized');
+      }
+    };
+
+    /* ==========================================
+       RENDERERS
+       ========================================== */
+    UI.renderMemories = function() {
+      const list = document.getElementById('memory-list');
+      list.innerHTML = STATE.memories.map(m => `
+        <div class="glass-card p-5 border-l-4" style="border-left-color: ${ARCHETYPES[m.arch]?.color || '#fff'}">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-[9px] opacity-40 font-bold uppercase">${m.arch} • ${m.ts}</span>
+            <button onclick="Cortex.deleteMemory(${m.id})" class="text-white/20 hover:text-white">✕</button>
+          </div>
+          <p class="text-sm italic opacity-90">"${m.text}"</p>
+        </div>
+      `).join('');
+    };
+
+    UI.renderVideos = function() {
+      const categories = [
+        { name: 'Frequências', vids: ['Bt_rLbMjJDk', '_0wVkryxanE', 'Id2NI9tv1r4'] },
+        { name: 'Arquitetura', vids: ['qldgs0aLdB0', 'FbutKMpd8MY', '1L9_rFmIGJ8'] }
+      ];
+
+      const container = document.getElementById('dt-categories');
+      container.innerHTML = categories.map(cat => `
+        <div>
+          <h4 class="text-sm font-bold mb-4 flex items-center gap-2">
+            <span class="w-1 h-4 bg-sky-500 rounded-full"></span> ${cat.name}
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${cat.vids.map(id => `
+              <div class="glass-card group cursor-pointer overflow-hidden" onclick="Player.play('${id}')">
+                <div class="aspect-video relative">
+                  <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition">
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                    <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">▶</div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    };
+
+    Cortex.deleteMemory = function(id) {
+      STATE.memories = STATE.memories.filter(m => m.id !== id);
+      localStorage.setItem('di_cortex_v28', JSON.stringify(STATE.memories));
+      UI.renderMemories();
+    };
+
+    /* ==========================================
+       HELPERS
+       ========================================== */
+    function toast(msg) {
+      const t = document.createElement('div');
+      t.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 glass-pill px-6 py-3 z-[2000] animate-bounce';
+      t.innerText = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2000);
+    }
+
+    // Drag support for navigation
+    let startX = 0;
+    document.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    document.addEventListener('touchend', e => {
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 100) {
+        if (diff > 0 && STATE.currentIdx < 2) Navigation.to(STATE.currentIdx + 1);
+        else if (diff < 0 && STATE.currentIdx > 0) Navigation.to(STATE.currentIdx - 1);
+      }
+    });
+
+    // Boot
+    window.onload = () => UI.init();
+
+  </script>
+</body>
+</html>
+
