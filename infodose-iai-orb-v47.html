@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fusion OS v27 — TRINITY ∴ KOBLLUX — Unified</title>
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050505">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- FONTS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            dynamic: 'var(--active-color)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg: #050505;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255,255,255,0.08);
+
+      --active-color: #E5E5E5;
+      --active-glow: rgba(229,229,229,0.12);
+      --accent-secondary: #505050;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;outline:none}
+    body{background:var(--bg);color:#fff;font-family:'Inter',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none}
+
+    /* Atmosfera */
+    .ambient-glow{position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(100px);transition:background 1.5s ease,opacity 1.5s ease}
+    #glow-top{top:-20%;left:-20%;width:80vw;height:80vw;background:var(--active-color);opacity:0.15}
+    #glow-bottom{bottom:-20%;right:-20%;width:80vw;height:80vw;background:var(--accent-secondary);opacity:0.1}
+
+    /* Viewport */
+    #universe-viewport{display:flex;width:300vw;height:100vh;transform:translateX(-100vw);transition:transform 0.7s cubic-bezier(0.2,0.8,0.2,1);position:relative;z-index:10}
+    .screen-panel{width:100vw;height:100vh;flex-shrink:0;position:relative;overflow:hidden}
+
+    /* Snap (vertical sections inside Nexus) */
+    .snap-container{height:100vh;width:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scroll-behavior:smooth;scrollbar-width:none}
+    .snap-section{height:100vh;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center}
+    .snap-container::-webkit-scrollbar{display:none}
+
+    /* UI */
+    .glass-card{background:linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(12px);border-radius:24px;transition:all .3s}
+    .glass-pill{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(16px);border-radius:100px;padding:6px 16px;cursor:pointer}
+    .matrix-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:12px;transition:.3s}
+    .matrix-item.active{border-color:var(--active-color);background:var(--active-glow)}
+    .custom-scroll::-webkit-scrollbar{width:4px}
+    .custom-scroll::-webkit-scrollbar-track{background:transparent}
+    .custom-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:10px}
+
+    .tab-btn{opacity:.3;transition:.3s;position:relative;padding:10px 0;font-family:'Space Grotesk',sans-serif}
+    .tab-btn.active{opacity:1;color:var(--active-color)}
+    .tab-btn.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--active-color);box-shadow:0 0 10px var(--active-color)}
+
+    .animate-breathe{animation:breathe 5s ease-in-out infinite}
+    @keyframes breathe{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.7;transform:scale(1.05)}}
+
+    #nav-indicator{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100;pointer-events:none}
+    .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.2);transition:.4s}
+    .dot.active{width:30px;background:var(--active-color);border-radius:10px;box-shadow:0 0 10px var(--active-color)}
+
+    .text-dynamic{color:var(--active-color);transition:color 1s}
+    .border-dynamic{border-color:var(--active-color);transition:border-color 1s}
+
+    /* small utility classes used below */
+    .tag-bubble{padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.05);font-size:10px;text-transform:uppercase;color:#fff;border:1px solid rgba(255,255,255,0.06);margin-right:4px}
+    .memory-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);padding:16px;border-radius:14px;margin-bottom:10px}
+    .video-card{width:14rem;border-radius:12px;overflow:hidden}
+    .played-badge{position:absolute;left:8px;top:8px;background:var(--active-color);color:#000;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700}
+  </style>
+</head>
+<body>
+
+  <!-- Ambient -->
+  <div id="glow-top" class="ambient-glow"></div>
+  <div id="glow-bottom" class="ambient-glow"></div>
+
+  <!-- HEADER (único) -->
+  <header class="fixed top-0 left-0 right-0 z-[100] px-6 py-8 flex justify-between items-center pointer-events-none select-none">
+    <div onclick="Navigation.to(1)" class="glass-pill flex items-center gap-3 pointer-events-auto cursor-pointer border-white/5 hover:border-white/10">
+      <div id="header-dot" class="w-1.5 h-1.5 rounded-full bg-dynamic shadow-[0_0_12px_var(--active-color)] transition-all duration-700"></div>
+      <span id="displayUserHeader" class="font-display font-semibold text-[10px] tracking-[0.15em] text-white/80">PILOTO</span>
+    </div>
+    <div class="glass-pill pointer-events-auto flex items-center gap-3 border-white/5">
+      <div id="header-sys-name" class="font-display font-bold text-[10px] tracking-widest text-dynamic cursor-default transition uppercase">SISTEMA</div>
+      <div class="w-[1px] h-3 bg-white/10"></div>
+      <div class="font-mono text-[9px] text-white/30">v27.0 • TRINITY ∴ KOBLLUX</div>
+    </div>
+  </header>
+
+  <!-- UNIVERSE VIEWPORT (3 screens) -->
+  <div id="universe-viewport">
+
+    <!-- SCREEN 0: CÓRTEX -->
+    <section class="screen-panel" id="view-cortex">
+      <div class="pt-28 px-6 h-full flex flex-col max-w-4xl mx-auto pb-6">
+          <div class="flex items-end justify-between mb-8">
+              <div>
+                <h2 class="font-display font-bold text-4xl tracking-tighter text-white">Córtex</h2>
+                <p class="text-[10px] text-white/30 uppercase tracking-[0.4em] mt-2 font-bold">Arquivo de Consciência</p>
+              </div>
+              <div class="flex gap-6 text-[10px] font-bold uppercase tracking-widest">
+                  <button onclick="Cortex.switch('crystals')" id="tab-crystals" class="tab-btn active">Memórias</button>
+                  <button onclick="Cortex.switch('matrices')" id="tab-matrices" class="tab-btn">Matrizes</button>
+              </div>
+          </div>
+
+          <!-- Crystals Panel -->
+          <div id="panel-crystals" class="flex-1 overflow-hidden flex flex-col animate-[fadeIn_0.5s_ease]">
+              <div class="flex gap-3 mb-6">
+                  <div class="flex-1 glass-card rounded-xl flex items-center px-4 py-3 group focus-within:border-dynamic/30 transition border-white/5">
+                      <i data-lucide="search" class="w-3.5 h-3.5 text-white/30 group-focus-within:text-dynamic transition"></i>
+                      <input id="memory-search" oninput="Cortex.render()" class="w-full ml-3 text-xs bg-transparent text-white placeholder-white/20 outline-none" placeholder="Buscar na rede neural...">
+                  </div>
+                  <button onclick="Cortex.openNewMemory()" class="glass-card px-5 rounded-xl hover:bg-white/10 transition flex items-center justify-center border-white/5 pointer-events-auto">
+                      <i data-lucide="plus" class="w-4 h-4 text-dynamic"></i>
+                  </button>
+              </div>
+              <div id="crystal-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pb-24 pr-1"></div>
+          </div>
+
+          <!-- Matrices Panel -->
+          <div id="panel-matrices" class="hidden flex-1 overflow-hidden flex flex-col animate-[fadeIn_0.5s_ease]">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div class="glass-card p-5 flex flex-col justify-between h-32">
+                      <p class="text-[9px] text-white/30 uppercase font-black tracking-widest">Matriz Ativa</p>
+                      <h4 id="active-matrix-name" class="text-lg font-display font-bold text-dynamic truncate">Nenhuma</h4>
+                      <div class="flex gap-2">
+                          <button onclick="Cortex.importMatrix()" class="text-[9px] bg-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10 transition uppercase font-bold text-white/50">Importar</button>
+                          <button onclick="Cortex.createNewMatrix()" class="text-[9px] bg-dynamic/10 text-dynamic px-3 py-1.5 rounded-lg hover:bg-dynamic/20 transition uppercase font-bold border border-dynamic/20">Nova</button>
+                      </div>
+                  </div>
+                  <div class="glass-card p-5 flex flex-col h-32">
+                      <p class="text-[9px] text-white/30 uppercase font-black tracking-widest mb-2">Arquivos</p>
+                      <div id="matrix-list-mini" class="flex-1 overflow-y-auto custom-scroll space-y-2"></div>
+                  </div>
+              </div>
+              <div class="flex-1 glass-card p-5 flex flex-col mb-20">
+                  <div class="flex justify-between items-center mb-4">
+                      <span id="editor-title" class="text-[9px] font-black uppercase tracking-widest text-white/40">Editor</span>
+                      <div class="flex gap-3">
+                          <button onclick="Cortex.exportMatrix()" class="text-white/20 hover:text-white transition"><i data-lucide="download" class="w-3.5 h-3.5"></i></button>
+                          <button onclick="Cortex.saveActiveMatrix()" class="text-dynamic font-bold text-[9px] uppercase hover:text-white transition">Salvar</button>
+                      </div>
+                  </div>
+                  <textarea id="matrix-editor" class="flex-1 bg-transparent border-none text-xs font-mono text-white/70 resize-none outline-none custom-scroll leading-relaxed" placeholder="// Diretrizes do sistema..."></textarea>
+              </div>
+          </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 1: NEXUS (orb + snap scroll) -->
+    <section class="screen-panel" id="view-nexus">
+      <div id="nexus-vertical" class="snap-container">
+
+        <!-- ORB & HERO -->
+        <div class="snap-section">
+          <div id="orbClickable" class="relative group cursor-grab active:cursor-grabbing p-10 transition-all duration-700 z-10" onmousedown="OrbDrag.start(event)" ontouchstart="OrbDrag.start(event)">
+            <div class="orb-wrapper relative" id="orbContainer">
+              <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-dynamic to-transparent opacity-10 blur-[80px] animate-breathe"></div>
+              <svg viewBox="0 0 200 200" class="w-64 h-64 md:w-80 md:h-80 drop-shadow-[0_0_40px_rgba(255,255,255,0.03)]">
+                <defs>
+                  <linearGradient id="orbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--active-color); stop-opacity:0.6"></stop>
+                    <stop offset="100%" style="stop-color:var(--active-color); stop-opacity:0.2"></stop>
+                  </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="90" stroke="url(#orbGrad)" stroke-width="2" fill="none"></circle>
+                <line x1="100" y1="10" x2="100" y2="190" stroke="url(#orbGrad)" stroke-width="3" opacity="0.4"></line>
+                <path d="M100 10 A90 90 0 0 0 100 190" stroke="url(#orbGrad)" stroke-width="6" fill="none"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="text-center z-20 mt-4 flex flex-col items-center max-w-md mx-auto">
+            <h1 id="hero-title" class="font-display font-black text-5xl md:text-6xl tracking-tighter text-white opacity-90 uppercase transition-all duration-700">DUAL</h1>
+
+            <div class="flex items-center justify-center gap-3 mt-8 bg-black/40 p-2 rounded-full border border-white/5 backdrop-blur-md">
+                <button onclick="MetaPulso.cycle('color')" class="glass-pill px-4 py-2 rounded-full flex flex-col items-center min-w-[70px] group transition hover:bg-white/10 bg-transparent border-transparent">
+                    <span class="text-[7px] font-mono text-white/30 uppercase tracking-wider mb-1">Freq</span>
+                    <span id="tuner-color" class="text-[9px] font-bold text-dynamic uppercase tracking-wide">...</span>
+                </button>
+                <div class="h-4 w-[1px] bg-white/10"></div>
+                <button onclick="MetaPulso.cycle('essence')" class="glass-pill px-4 py-2 rounded-full flex flex-col items-center min-w-[70px] group transition hover:bg-white/10 bg-transparent border-transparent">
+                    <span class="text-[7px] font-mono text-white/30 uppercase tracking-wider mb-1">Essência</span>
+                    <span id="tuner-essence" class="text-[9px] font-bold text-white uppercase tracking-wide">...</span>
+                </button>
+                <div class="h-4 w-[1px] bg-white/10"></div>
+                <button onclick="MetaPulso.cycle('element')" class="glass-pill px-4 py-2 rounded-full flex flex-col items-center min-w-[70px] group transition hover:bg-white/10 bg-transparent border-transparent">
+                    <span class="text-[7px] font-mono text-white/30 uppercase tracking-wider mb-1">Elemento</span>
+                    <span id="tuner-element" class="text-[9px] font-bold text-white uppercase tracking-wide">...</span>
+                </button>
+            </div>
+
+            <p id="triad-status" class="mt-4 text-[9px] font-mono text-white/30 tracking-widest h-4">SINCRONIZANDO...</p>
+          </div>
+
+          <div class="absolute bottom-12 animate-bounce opacity-20 pointer-events-none">
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white"></i>
+          </div>
+        </div>
+
+        <!-- CARDS / STATUS -->
+        <div class="snap-section px-6 bg-gradient-to-t from-black/50 to-transparent">
+          <div class="max-w-4xl w-full">
+            <h3 class="text-2xl font-display font-bold uppercase tracking-tight mb-8 flex items-center gap-3">
+                <i data-lucide="activity" class="w-5 h-5 text-dynamic"></i>
+                Sinais <span class="text-dynamic" id="cards-archetype-name">Vitais</span>
+            </h3>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass-card p-6 hover:bg-white/5 transition border border-white/5 hover:border-dynamic/30">
+                    <i data-lucide="zap" class="w-5 h-5 mb-4 text-white/20 group-hover:text-dynamic transition"></i>
+                    <div class="text-[9px] uppercase font-bold text-white/30 tracking-wider">Sistema</div>
+                    <div class="text-lg font-display font-bold mt-1 text-white">Estável</div>
+                </div>
+                <div class="glass-card p-6 hover:bg-white/5 transition border border-dynamic/20 hover:border-dynamic/40 bg-dynamic/5 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-5 rotate-12"><i data-lucide="fingerprint" class="w-24 h-24"></i></div>
+                    <i data-lucide="user" class="w-5 h-5 mb-4 text-dynamic relative z-10"></i>
+                    <div class="text-[9px] uppercase font-bold text-dynamic/50 tracking-wider relative z-10">Arquétipo</div>
+                    <div id="card-arch-name" class="text-lg font-display font-bold mt-1 text-dynamic relative z-10 truncate">...</div>
+                </div>
+                <div class="glass-card p-6 hover:bg-white/5 transition border border-white/5 hover:border-dynamic/30 col-span-2">
+                     <div class="flex justify-between items-center mb-2">
+                        <div class="text-[9px] uppercase font-bold text-white/30 tracking-wider">Memória Disponível</div>
+                        <div class="text-[9px] font-mono text-dynamic">100%</div>
+                     </div>
+                     <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                         <div class="h-full bg-dynamic w-full opacity-50"></div>
+                     </div>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DR. K / DYNAMIC -->
+        <div class="snap-section px-6 bg-gradient-to-b from-black/50 to-transparent">
+          <div class="max-w-4xl w-full flex flex-col justify-center h-full">
+            <h2 class="text-xs uppercase tracking-[0.3em] text-white/30 font-bold mb-8">Curadoria Dr. K</h2>
+            <div class="glass-card p-8 mb-8 border-l-2 border-dynamic relative overflow-hidden">
+              <div class="absolute right-0 top-0 p-4 opacity-10"><i data-lucide="quote" class="w-12 h-12"></i></div>
+              <p id="drk-quote" class="text-xl md:text-2xl font-display font-light italic text-white/90 leading-relaxed relative z-10">
+                "O silêncio não é vazio. É cheio de respostas."
+              </p>
+              <div class="flex items-center gap-2 mt-6 opacity-60">
+                  <div class="w-1 h-1 rounded-full bg-dynamic"></div>
+                  <span class="text-[9px] font-mono uppercase tracking-[0.25em] text-dynamic">Insight Meta Pulso</span>
+              </div>
+            </div>
+
+            <div id="archetype-video-suggestion" class="w-full aspect-video rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden relative group cursor-pointer shadow-2xl transition-all hover:border-dynamic/30">
+               <div class="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition z-10"></div>
+               <img id="suggestion-thumb" src="" class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition duration-1000">
+               <div class="absolute inset-0 flex flex-col items-center justify-center z-20 gap-3">
+                   <div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-dynamic group-hover:text-black transition duration-500 border border-white/10 group-hover:border-transparent">
+                       <i data-lucide="play" class="w-5 h-5 fill-current ml-1"></i>
+                   </div>
+                   <span class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur border border-white/5 group-hover:border-dynamic/30 transition">Sintonizar Frequência</span>
+               </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SCREEN 2: DUALTUBE -->
+    <section class="screen-panel" id="view-dualtube">
+      <div class="pt-28 px-6 h-full flex flex-col max-w-4xl mx-auto pb-6">
+          <div class="mb-10 flex justify-between items-end">
+            <div>
+                <h2 class="font-display font-black text-4xl text-white tracking-tighter uppercase">DualTube</h2>
+                <div class="h-1 w-12 bg-dynamic mt-3 rounded-full opacity-80"></div>
+            </div>
+            <div class="text-right">
+                <span id="dt-watched-count" class="font-display font-bold text-3xl text-white/10">0</span>
+                <p class="text-[8px] uppercase text-white/20 font-bold tracking-widest mt-1">Vistos</p>
+            </div>
+          </div>
+          <div id="video-categories" class="flex-1 overflow-y-auto custom-scroll space-y-12 pb-32"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- NAV DOTS -->
+  <div id="nav-indicator">
+    <div class="dot" id="dot-0"></div>
+    <div class="dot active" id="dot-1"></div>
+    <div class="dot" id="dot-2"></div>
+  </div>
+
+  <!-- MODAL OVERLAY -->
+  <div id="modal-overlay" class="fixed inset-0 z-[500] bg-black/80 backdrop-blur-xl hidden flex items-center justify-center p-6">
+      <div id="modal-content" class="w-full max-w-lg glass-card p-8 scale-90 opacity-0 transition-all duration-300 bg-black/60 border border-white/10"></div>
+  </div>
+
+  <!-- PLAYER -->
+  <div id="player-overlay" class="fixed inset-0 z-[1000] bg-black/95 hidden flex-col transition-opacity duration-500">
+      <div class="p-6 flex justify-between items-center border-b border-white/5 bg-black">
+          <div class="flex items-center gap-3">
+              <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+              <span class="font-mono text-[10px] text-white/50 uppercase tracking-widest">Transmissão Segura</span>
+          </div>
+          <button onclick="closePlayer()" class="glass-pill text-[10px] font-bold uppercase hover:bg-white/10 transition border-white/10 text-white/60">Fechar</button>
+      </div>
+      <div class="flex-1 flex items-center justify-center p-4">
+          <div id="yt-embed" class="w-full max-w-5xl aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#050505]"></div>
+      </div>
+  </div>
+
+  <div id="di_toast" class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[2000] pointer-events-none flex flex-col gap-2 w-max items-center"></div>
+
+  <!-- Floating Infodose Button (will be init via JS) -->
+
+  <script>
+    /************************************************************************
+     * UNIFIED APP - Fusion OS v27 + v23 merge
+     * Mantive prefixos di_ para keys e consolidei o estado em APP_STATE.
+     * Identidade persistente: TRINITY ∴ KOBLLUX
+     ************************************************************************/
+
+    // ====== KEYS (unificados e com prefix di_) ======
+    const KEYS = {
+      CORTEX: 'di_cortex_v27',
+      USER: 'di_userName',
+      STATS: 'di_videoStats',
+      TRIAD: 'di_metaTriad',
+      ACTIVE_META: 'di_activeMeta',
+      ARCHETYPE: 'di_activeArchetype',
+      TRAIN_TXT: 'di_trainingText',
+      INFODOSE_NAME: 'di_infodoseName'
+    };
+
+    // ====== APP STATE (unificado) ======
+    const APP_STATE = {
+      screen: 1,
+      cortex: { crystals: [], matrices: [] },
+      activePanel: 'crystals',
+      editingMatrixId: null,
+      triad: { color: 'Dourado', essence: 'Movimento', element: 'Fogo' },
+      metaData: null,
+      currentArchetype: null
+    };
+
+    // ====== OPTIONS & MAPS ======
+    const OPTIONS = {
+      colors: ['Dourado','Azul','Vermelho','Verde','Roxo','Prata','Preto'],
+      essences: ['Movimento','Silêncio'],
+      elements: ['Fogo','Água','Madeira','Terra','Metal']
+    };
+    const COLOR_MAP = {
+      'Dourado':'#FFD700','Azul':'#38BDF8','Vermelho':'#EF4444','Verde':'#22C55E','Roxo':'#A855F7','Prata':'#E5E7EB','Preto':'#505050'
+    };
+
+    // ====== ARCHETYPES DB (consolidado) ======
+    const ARCHETYPES_DB = {
+      "ATLAS": {"id":"atlas","name":"Atlas","desc":"Estrutura & Governo","colors":{"main":"#38BDF8","soft":"rgba(56,189,248,0.18)","secondary":"#0EA5E9"},"drk":"A ordem externa reflete a clareza interna. Construa.","vid":"Bt_rLbMjJDk"},
+      "NOVA": {"id":"nova","name":"Nova","desc":"Inovação & Fluxo","colors":{"main":"#F97316","soft":"rgba(249,115,22,0.18)","secondary":"#FDBA74"},"drk":"O erro é apenas um dado não processado. Itere.","vid":"qldgs0aLdB0"},
+      "VITALIS": {"id":"vitalis","name":"Vitalis","desc":"Energia & Ação","colors":{"main":"#22C55E","soft":"rgba(34,197,94,0.18)","secondary":"#4ADE80"},"drk":"O corpo sabe antes da mente duvidar. Mova-se.","vid":"_0wVkryxanE"},
+      "PULSE": {"id":"pulse","name":"Pulse","desc":"Ritmo & Emoção","colors":{"main":"#EC4899","soft":"rgba(236,72,153,0.18)","secondary":"#F9A8D4"},"drk":"Sinta a batida do caos e dance com ela.","vid":"Id2NI9tv1r4"},
+      "ARTEMIS": {"id":"artemis","name":"Artemis","desc":"Foco & Caça","colors":{"main":"#A855F7","soft":"rgba(168,85,247,0.18)","secondary":"#C4B5FD"},"drk":"Defina o alvo. O resto é apenas ruído.","vid":"FbutKMpd8MY"},
+      "SERENA": {"id":"serena","name":"Serena","desc":"Paz & Harmonia","colors":{"main":"#38BDF8","soft":"rgba(56,189,248,0.14)","secondary":"#E0F2FE"},"drk":"No centro do furacão, existe um ponto imóvel. Seja ele.","vid":"hfQ1L6fCfAo"},
+      "KAOS": {"id":"kaos","name":"Kaos","desc":"Mudança & Entropia","colors":{"main":"#FACC15","soft":"rgba(250,204,21,0.18)","secondary":"#FDE68A"},"drk":"Quebre o padrão hoje. Amanhã nasce o novo.","vid":"Tq99vQNQ6dQ"},
+      "GENUS": {"id":"genus","name":"Genus","desc":"Criação & Arte","colors":{"main":"#E5E7EB","soft":"rgba(229,231,235,0.12)","secondary":"#9CA3AF"},"drk":"A excelência habita nos detalhes que ninguém vê.","vid":"DTDfkHwuMic"},
+      "LUMINE": {"id":"lumine","name":"Lumine","desc":"Brilho & Carisma","colors":{"main":"#FDE047","soft":"rgba(253,224,71,0.18)","secondary":"#FACC15"},"drk":"Irradie sem medo. A sombra é apenas falta de luz.","vid":"1L9_rFmIGJ8"},
+      "SOLUS": {"id":"solus","name":"Solus","desc":"Vazio & Verdade","colors":{"main":"#0EA5E9","soft":"rgba(14,165,233,0.20)","secondary":"#0369A1"},"drk":"O silêncio revela mais que mil estímulos.","vid":"qldgs0aLdB0"},
+      "RHEA": {"id":"rhea","name":"Rhea","desc":"Cuidado & Raiz","colors":{"main":"#22C55E","soft":"rgba(34,197,94,0.16)","secondary":"#16A34A"},"drk":"Nutra a raiz e o fruto virá naturalmente.","vid":"Bt_rLbMjJDk"},
+      "HORUS": {"id":"horus","name":"Horus","desc":"Visão & Estratégia","colors":{"main":"#5500FF","soft":"rgba(85,0,255,0.2)","secondary":"#8B5CF6"},"drk":"Observe o todo antes de agir no detalhe.","vid":"_0wVkryxanE"},
+      "AION": {"id":"aion","name":"Aion","desc":"Tempo & Evolução","colors":{"main":"#4F46E5","soft":"rgba(79,70,229,0.20)","secondary":"#A5B4FC"},"drk":"O tempo não é linear. O agora é eterno.","vid":"Id2NI9tv1r4"}
+    };
+
+    // ====== INFODOSE MICROSCRIPTS (mantidos) ======
+    const INFODOSE_MICRO_SCRIPTS = {
+      ATLAS: { open: "Erga-se. A estrutura do seu império começa agora.", ritual: "Respire fundo e visualize uma coluna de luz sustentando suas costas.", affirmation: "Eu sou o alicerce sobre o qual o futuro é construído." },
+      NOVA:  { open: "E aí! O universo tá cheio de glitches esperando nossa correção criativa.", ritual: "Estale os dedos três vezes e sorria para o nada. A mágica começou.", affirmation: "Minha mente é um prisma que refrata o impossível em soluções." },
+      VITALIS:{ open: "Sem hesitação. O tempo é agora e a energia está no pico.", ritual: "Três respirações explosivas. Sinta o sangue acordar.", affirmation: "Eu sou a força motriz que transforma intenção em resultado." },
+      PULSE: { open: "Sente o ritmo? O dia já começou a tocar nossa música.", ritual: "Feche os olhos e encontre a batida do seu coração. Sincronize.", affirmation: "Eu fluo com a corrente, dançando entre o caos e a ordem." },
+      ARTEMIS:{ open:"Curso traçado. O horizonte nos chama, capitão.", ritual:"Olhe para o ponto mais distante que conseguir ver. Foque.", affirmation:"Minha vontade é a bússola; meu foco é o norte verdadeiro."},
+      LUMINE:{ open:"Olha quanto brilho! Hoje vamos iluminar cada canto escuro.", ritual:"Imagine uma luz dourada saindo do seu peito e preenchendo a sala.", affirmation:"Eu irradio positividade e clareza por onde passo."},
+      SERENA:{ open:"Calma. O mundo lá fora gira, mas aqui dentro há paz.", ritual:"Uma mão no peito, outra na barriga. Sinta o quietude.", affirmation:"No silêncio do meu centro, encontro todas as respostas."},
+      KAOS:{ open:"Quebre o padrão. A ordem é só uma ilusão que vamos desmantelar.", ritual:"Faça um movimento brusco e inesperado. Acorde o sistema.", affirmation:"Eu abraço a incerteza como combustível para a revolução."},
+      GENUS:{ open:"Precisão. Cada detalhe importa na obra que somos.", ritual:"Observe um objeto próximo. Note cada textura e cor por 10 segundos.", affirmation:"A excelência é meu hábito; a perfeição, meu horizonte."},
+      RHEA:{ open:"Bem-vindo de volta. O dia te recebe com um abraço suave.", ritual:"Abrace a si mesmo por um instante. Sinta o conforto de ser quem é.", affirmation:"Eu cuido de mim para poder cuidar do mundo."},
+      SOLUS:{ open:"No vazio, a verdade ecoa. Escute o que não é dito.", ritual:"Fique em silêncio absoluto até ouvir o som da sala.", affirmation:"Minha presença é suficiente. Minha mente é um santuário."},
+      HORUS:{ open:"Visão panorâmica ativada. Estratégia definida. Executar.", ritual:"Visualize seu dia inteiro em um segundo, do início ao fim.", affirmation:"Eu vejo além do óbvio. Eu comando meu destino."},
+      AION:{ open:"O tempo é apenas uma variável. Vamos ajustá-la.", ritual:"Visualize o futuro como se fosse uma memória.", affirmation:"Eu sou o arquiteto do meu próprio tempo."}
+    };
+
+    // Build INFODOSE training text
+    let INFODOSE_TRAINING_TEXT = `Treinamento Completo A.Infodose...\n\n-- ANEXO: MICRO-SCRIPTS --\n`;
+    Object.keys(INFODOSE_MICRO_SCRIPTS).forEach(key=>{
+      const s = INFODOSE_MICRO_SCRIPTS[key];
+      INFODOSE_TRAINING_TEXT += `\n[${key}]\n- Abertura: "${s.open}"\n`;
+    });
+
+    /************************************************************************
+     * MetaPulso: carrega DB externo (se houver) e atualiza UI quando triad muda
+     ************************************************************************/
+    const MetaPulso = {
+      init: async () => {
+        try {
+          const req = await fetch('metapulso_70_combinacoes.json');
+          if(!req.ok) throw new Error('JSON Missing');
+          APP_STATE.metaData = await req.json();
+          console.log('Meta Pulso DB Loaded');
+        } catch(e) {
+          console.warn('Meta Pulso JSON not found. Using fallback.');
+          APP_STATE.metaData = {}; 
+        }
+      },
+
+      cycle: (type) => {
+        const list = type === 'color' ? OPTIONS.colors : type === 'essence' ? OPTIONS.essences : OPTIONS.elements;
+        const current = APP_STATE.triad[type];
+        const idx = list.indexOf(current);
+        const next = list[(idx + 1) % list.length];
+        APP_STATE.triad[type] = next;
+        saveTriad();
+        MetaPulso.updateUI();
+      },
+
+      updateUI: () => {
+        const cVal = APP_STATE.triad.color;
+        const eVal = APP_STATE.triad.essence;
+        const elVal = APP_STATE.triad.element;
+        const hex = COLOR_MAP[cVal] || '#E5E5E5';
+
+        document.getElementById('tuner-color').innerText = cVal;
+        document.getElementById('tuner-color').style.color = hex;
+        document.getElementById('tuner-essence').innerText = eVal;
+        document.getElementById('tuner-element').innerText = elVal;
+
+        const r = document.documentElement;
+        r.style.setProperty('--active-color', hex);
+        r.style.setProperty('--active-glow', hex + '26'); // ~15% opacity
+        const topGlow = document.getElementById('glow-top');
+        const botGlow = document.getElementById('glow-bottom');
+        if(topGlow) topGlow.style.background = hex;
+        if(botGlow) botGlow.style.background = (ARCHETYPES_DB[APP_STATE.currentArchetype]?.colors?.secondary) || getComputedStyle(document.documentElement).getPropertyValue('--accent-secondary');
+
+        // Busca por identidade no metaData
+        const key = `${cVal}|${eVal}|${elVal}`;
+        const data = APP_STATE.metaData ? APP_STATE.metaData[key] : null;
+        const statusEl = document.getElementById('triad-status');
+
+        if (data) {
+          statusEl.innerText = "SINAL ENCONTRADO";
+          statusEl.style.color = hex;
+          const firstName = data.nome.split(' ')[0].toUpperCase();
+          document.getElementById('hero-title').innerText = firstName;
+          document.getElementById('header-sys-name').innerText = data.nome;
+          document.getElementById('card-arch-name').innerText = firstName;
+          document.getElementById('cards-archetype-name').innerText = firstName;
+          document.getElementById('drk-quote').innerText = `"${data.frase}"`;
+
+          const vidId = eVal === 'Movimento' ? 'Id2NI9tv1r4' : 'Bt_rLbMjJDk';
+          const thumb = document.getElementById('suggestion-thumb');
+          if(thumb) thumb.src = `https://img.youtube.com/vi/${vidId}/mqdefault.jpg`;
+          const vidCard = document.getElementById('archetype-video-suggestion');
+          if(vidCard) vidCard.onclick = () => playVideo(vidId, data.nome);
+          localStorage.setItem(KEYS.ACTIVE_META, JSON.stringify(data));
+        } else {
+          statusEl.innerText = "SINAL FRACO...";
+          statusEl.style.color = "#555";
+          document.getElementById('hero-title').innerText = "BUSCANDO";
+          document.getElementById('drk-quote').innerText = "...";
+        }
+      }
+    };
+
+    // ====== ArchetypeSystem: aplica arquétipo global (consolidação dos dois arquivos) ======
+    const ArchetypeSystem = {
+      init: () => {
+        const saved = localStorage.getItem(KEYS.ARCHETYPE);
+        if (saved && ARCHETYPES_DB[saved]) {
+          ArchetypeSystem.set(saved);
+        } else {
+          ArchetypeSystem.renderDefault();
+        }
+      },
+
+      renderDefault: () => {
+        APP_STATE.currentArchetype = null;
+        const customName = localStorage.getItem(KEYS.INFODOSE_NAME);
+        const displayName = customName ? customName : 'Dual';
+
+        // UI updates
+        // Alguns elementos usados aqui podem não existir num dos HTMLs; cheque console se erro.
+        safeSetText('displayArchetypeBadge', displayName);
+        safeSetText('displayInfodoseHeader', 'SYSTEM');
+        safeSetText('hero-title', displayName);
+        safeSetText('cards-archetype-name', 'Standby');
+        safeSetText('archetype-status-text', 'Aguardando Sincronização');
+        safeSetText('drk-line', '"O vazio é o campo de todas as possibilidades."');
+
+        // palette void
+        document.documentElement.style.setProperty('--active-color', '#E5E5E5');
+        document.documentElement.style.setProperty('--active-glow', 'rgba(229,229,229,0.08)');
+        document.documentElement.style.setProperty('--accent-secondary', '#404040');
+        const topGlow = document.getElementById('glow-top');
+        const botGlow = document.getElementById('glow-bottom');
+        if(topGlow) topGlow.style.opacity = '0.05';
+        if(botGlow) botGlow.style.opacity = '0.03';
+        console.log('[Dual Mode] Sistema em estado neutro (Void).');
+      },
+
+      set: (key) => {
+        if(!ARCHETYPES_DB[key]) return;
+        APP_STATE.currentArchetype = key;
+        localStorage.setItem(KEYS.ARCHETYPE, key);
+
+        const data = ARCHETYPES_DB[key];
+        document.documentElement.style.setProperty('--active-color', data.colors.main);
+        document.documentElement.style.setProperty('--active-glow', data.colors.soft);
+        document.documentElement.style.setProperty('--accent-secondary', data.colors.secondary);
+
+        const topGlow = document.getElementById('glow-top');
+        const botGlow = document.getElementById('glow-bottom');
+        if(topGlow){ topGlow.style.background = data.colors.main; topGlow.style.opacity='0.15'; }
+        if(botGlow){ botGlow.style.background = data.colors.secondary; botGlow.style.opacity='0.1'; }
+
+        const mainDisplay = localStorage.getItem(KEYS.INFODOSE_NAME) || "DUAL";
+        safeSetText('hero-title', mainDisplay);
+        safeSetText('cards-archetype-name', key);
+        safeSetText('archetype-status-text', data.desc);
+        safeSetText('drk-line', `"${data.drk}"`);
+
+        // set recommendation video area if exists
+        const vidContainer = document.getElementById('archetype-video-suggestion');
+        if(vidContainer){
+          vidContainer.onclick = () => playVideo(data.vid, `Sintoniza: ${key}`);
+          vidContainer.innerHTML = `
+            <img src="https://img.youtube.com/vi/${data.vid}/mqdefault.jpg" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition duration-500 transform group-hover:scale-105">
+            <div class="absolute inset-0 bg-black/20 flex flex-col items-center justify-center backdrop-blur-[2px] group-hover:backdrop-blur-none transition">
+                <i data-lucide="play-circle" class="w-12 h-12 text-white/80 group-hover:text-dynamic transition"></i>
+                <span class="mt-2 text-[10px] uppercase tracking-widest font-bold">Recomendação ${key}</span>
+            </div>
+          `;
+          lucide.createIcons();
+        }
+      }
+    };
+
+    // ====== Navigation / Gestures ======
+    const Navigation = {
+      to: (idx) => {
+        APP_STATE.screen = idx;
+        document.getElementById('universe-viewport').style.transform = `translateX(-${idx * 100}vw)`;
+        [0,1,2].forEach(i => {
+          const dot = document.getElementById(`dot-${i}`);
+          if(dot) dot.classList.toggle('active', i === idx);
+          if(dot) { dot.style.backgroundColor = i === idx ? 'var(--active-color)' : 'rgba(255,255,255,0.2)'; }
+        });
+      }
+    };
+
+    function setupGestures() {
+      let tsX=0, tsY=0;
+      document.addEventListener('touchstart', e => { tsX = e.touches[0].clientX; tsY = e.touches[0].clientY; }, {passive:true});
+      document.addEventListener('touchend', e => {
+        const dX = tsX - e.changedTouches[0].clientX;
+        const dY = tsY - e.changedTouches[0].clientY;
+        if(Math.abs(dX)>60 && Math.abs(dX)>Math.abs(dY)*1.5){
+          if(dX>0 && APP_STATE.screen<2) Navigation.to(APP_STATE.screen+1);
+          if(dX<0 && APP_STATE.screen>0) Navigation.to(APP_STATE.screen-1);
+        }
+      }, {passive:true});
+    }
+
+    const OrbDrag = {
+      active:false,startX:0,el:null,
+      start:function(e){
+        this.active=true;
+        this.startX = e.type.includes('mouse')?e.clientX:e.touches[0].clientX;
+        this.el = document.getElementById('orbContainer');
+        const move = ev => this.move(ev);
+        const end = () => { this.end(); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', end); window.removeEventListener('touchmove', move); window.removeEventListener('touchend', end); };
+        window.addEventListener('mousemove', move); window.addEventListener('mouseup', end); window.addEventListener('touchmove', move, {passive:false}); window.addEventListener('touchend', end);
+      },
+      move:function(e){
+        if(!this.active) return;
+        const x = e.type.includes('mouse')?e.clientX:e.touches[0].clientX;
+        const diff = x - this.startX;
+        // translation only (no heavy rotation) to respect your earlier requirement
+        this.el.style.transform = `translateX(${diff/4}px)`;
+      },
+      end:function(){
+        if(!this.active) return;
+        this.active=false;
+        const style = window.getComputedStyle(this.el);
+        const matrix = new DOMMatrix(style.transform);
+        if(matrix.m41 > 60 && APP_STATE.screen > 0) Navigation.to(APP_STATE.screen - 1);
+        else if(matrix.m41 < -60 && APP_STATE.screen < 2) Navigation.to(APP_STATE.screen + 1);
+        this.el.style.transform = 'translateX(0)';
+      }
+    };
+
+    // ====== CORTEX (consolidado) ======
+    const Cortex = {
+      switch:(tab)=>{
+        APP_STATE.activePanel = tab;
+        document.getElementById('panel-crystals').classList.toggle('hidden', tab !== 'crystals');
+        document.getElementById('panel-matrices').classList.toggle('hidden', tab !== 'matrices');
+        document.getElementById('tab-crystals').classList.toggle('active', tab === 'crystals');
+        document.getElementById('tab-matrices').classList.toggle('active', tab === 'matrices');
+        Cortex.render();
+      },
+
+      render:()=>{
+        if(APP_STATE.activePanel === 'crystals') Cortex.renderCrystals();
+        else Cortex.renderMatrices();
+      },
+
+      renderCrystals:()=>{
+        const container = document.getElementById('crystal-container');
+        const query = (document.getElementById('memory-search')?.value || '').toLowerCase();
+        if(!Array.isArray(APP_STATE.cortex.crystals)) APP_STATE.cortex.crystals = [];
+        const filtered = APP_STATE.cortex.crystals.filter(c => (c.content||'').toLowerCase().includes(query) || (c.tags||[]).some(t=>t.toLowerCase().includes(query)));
+        filtered.sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0));
+        container.innerHTML = filtered.length ? filtered.map(c=>{
+          const archData = ARCHETYPES_DB[c.archetype] || ARCHETYPES_DB['VITALIS'];
+          const archColor = archData ? archData.colors.main : 'var(--active-color)';
+          const tagsHtml = (c.tags||[]).map(t=>`<span class="tag-bubble">${t}</span>`).join('');
+          const archeHtml = c.archetype ? `<span class="tag-bubble" style="border-color:${archColor};color:${archColor}">${c.archetype}</span>` : '';
+          return `<div class="memory-card p-6 ${c.pinned?'pinned':''}">
+                    <div class="flex justify-between items-start mb-3">
+                      <div class="flex gap-2 flex-wrap">${tagsHtml}${archeHtml}</div>
+                      <div class="flex gap-3 opacity-20 hover:opacity-100 transition">
+                        <button onclick="Cortex.togglePin(${c.id});event.stopPropagation()"><i data-lucide="pin" class="w-3.5 h-3.5 ${c.pinned?'text-dynamic fill-current':''}"></i></button>
+                        <button onclick="Cortex.deleteMemory(${c.id});event.stopPropagation()"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-500"></i></button>
+                      </div>
+                    </div>
+                    <p class="text-sm leading-relaxed text-white/80 font-medium italic">"${c.content}"</p>
+                  </div>`;
+        }).join('') : `<div class="text-center py-20 opacity-20 text-[10px] font-mono uppercase tracking-widest">Sem registros</div>`;
+        lucide.createIcons();
+      },
+
+      renderMatrices:()=>{
+        const list = document.getElementById('matrix-list-mini');
+        if(!Array.isArray(APP_STATE.cortex.matrices)) APP_STATE.cortex.matrices = [];
+        const activeM = APP_STATE.cortex.matrices.find(m => m.active);
+        document.getElementById('active-matrix-name').innerText = activeM ? activeM.name : 'Nenhuma';
+        list.innerHTML = APP_STATE.cortex.matrices.map(m=>`<div onclick="Cortex.loadToEditor('${m.id}')" class="matrix-item p-3 flex justify-between items-center cursor-pointer ${m.active?'active':''}">
+            <span class="text-[10px] font-bold uppercase tracking-widest ${m.active?'text-dynamic':'text-white/40'}">${m.name}</span>
+            <button onclick="Cortex.deleteMatrix('${m.id}', event)" class="text-white/10 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </div>`).join('');
+        if(!APP_STATE.editingMatrixId && activeM) Cortex.loadToEditor(activeM.id);
+        lucide.createIcons();
+      },
+
+      openNewMemory:()=>{
+        Modal.show(`
+          <h3 class="text-xl font-black uppercase mb-6 tracking-tight text-dynamic">Novo Cristal</h3>
+          <div class="space-y-4">
+            <textarea id="new-mem-txt" class="w-full h-32 bg-white/5 rounded-2xl p-4 border border-white/10 text-sm outline-none focus:border-dynamic" placeholder="O que deseja cristalizar?"></textarea>
+            <input id="new-mem-tags" class="w-full bg-white/5 rounded-xl p-3 border border-white/10 text-xs" placeholder="Tags (separadas por vírgula)">
+            <div class="flex justify-between items-center mt-4">
+              <span class="text-[9px] uppercase tracking-widest text-white/30">Contexto: ${APP_STATE.currentArchetype || 'NEUTRO'}</span>
+              <div class="flex gap-3">
+                <button onclick="Modal.hide()" class="text-xs uppercase font-bold text-white/30">Cancelar</button>
+                <button onclick="Cortex.saveNewMemory()" class="glass-pill bg-active-color/20 text-dynamic border-dynamic">Cristalizar</button>
+              </div>
+            </div>
+          </div>
+        `);
+      },
+
+      saveNewMemory:()=>{
+        const content = document.getElementById('new-mem-txt').value;
+        const tags = (document.getElementById('new-mem-tags').value||'').split(',').map(t=>t.trim()).filter(Boolean);
+        if(!content) return;
+        const newMem = { id: Date.now(), content, tags, archetype: APP_STATE.currentArchetype, pinned:false };
+        APP_STATE.cortex.crystals.unshift(newMem);
+        saveCortex();
+        Cortex.render();
+        Modal.hide();
+        toast("Memória cristalizada");
+      },
+
+      togglePin:(id)=>{
+        const m = APP_STATE.cortex.crystals.find(c=>c.id===id);
+        if(m) m.pinned = !m.pinned;
+        saveCortex(); Cortex.render();
+      },
+
+      deleteMemory:(id)=>{
+        APP_STATE.cortex.crystals = APP_STATE.cortex.crystals.filter(c=>c.id!==id);
+        saveCortex(); Cortex.render();
+      },
+
+      loadToEditor:(id)=>{
+        const m = APP_STATE.cortex.matrices.find(mx=>mx.id===id);
+        if(!m) return;
+        APP_STATE.editingMatrixId = id;
+        safeSetText('editor-title', `Editando: ${m.name}`);
+        document.getElementById('matrix-editor').value = m.content;
+        Cortex.renderMatrices();
+      },
+
+      createNewMatrix:()=>{
+        const name = prompt("Nome da nova matriz:");
+        if(!name) return;
+        const newM = { id: 'm' + Date.now(), name, content: '', active: false };
+        APP_STATE.cortex.matrices.push(newM);
+        saveCortex();
+        Cortex.loadToEditor(newM.id);
+      },
+
+      saveActiveMatrix:()=>{
+        const m = APP_STATE.cortex.matrices.find(mx=>mx.id===APP_STATE.editingMatrixId);
+        if(!m) return;
+        m.content = document.getElementById('matrix-editor').value;
+        if(!APP_STATE.cortex.matrices.find(x=>x.active)) m.active = true;
+        saveCortex();
+        if(m.active) localStorage.setItem(KEYS.TRAIN_TXT, m.content);
+        toast("Matriz salva e sincronizada");
+      },
+
+      exportMatrix:()=>{
+        const m = APP_STATE.cortex.matrices.find(mx=>mx.id===APP_STATE.editingMatrixId);
+        if(!m) return;
+        const blob = new Blob([m.content], {type:'text/markdown'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `${m.name}.md`; a.click();
+      },
+
+      importMatrix:()=>{
+        const inp = document.createElement('input'); inp.type='file'; inp.accept='.md,.txt';
+        inp.onchange = e=>{
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = ev=>{
+            const newM = { id:'m'+Date.now(), name:file.name.replace('.md',''), content:ev.target.result, active:false };
+            APP_STATE.cortex.matrices.push(newM);
+            saveCortex(); Cortex.renderMatrices(); toast("Matriz importada");
+          };
+          reader.readAsText(file);
+        };
+        inp.click();
+      },
+
+      deleteMatrix:(id,e)=>{
+        e.stopPropagation();
+        if(APP_STATE.cortex.matrices.length <= 1) return toast("Mantenha ao menos uma matriz.");
+        APP_STATE.cortex.matrices = APP_STATE.cortex.matrices.filter(m=>m.id!==id);
+        if(APP_STATE.editingMatrixId === id) APP_STATE.editingMatrixId = null;
+        saveCortex(); Cortex.renderMatrices();
+      }
+    };
+
+    // ====== DUALTUBE (consolidado) ======
+    const DualTube = {
+      data: [
+        { cat:'Frequências e Rituais', vids:["Bt_rLbMjJDk","_0wVkryxanE","Id2NI9tv1r4"], desc:'Ambientação, Aromas e Ativação' },
+        { cat:'Arquitetura Cognitiva', vids:["qldgs0aLdB0","FbutKMpd8MY","1L9_rFmIGJ8"], desc:'Dopamina, Foco e Subconsciente' },
+        { cat:'Meditações Profundas', vids:["hfQ1L6fCfAo","Tq99vQNQ6dQ","DTDfkHwuMic"], desc:'Deriva, Navegação e Silêncio' }
+      ],
+      render:()=>{
+        const container = document.getElementById('video-categories');
+        const stats = JSON.parse(localStorage.getItem(KEYS.STATS) || '{}');
+        container.innerHTML = DualTube.data.map(c=>`
+          <div class="animate-[fadeIn_0.5s_ease] space-y-6">
+            <div class="flex flex-col">
+              <h4 class="text-sm font-black uppercase tracking-[0.3em] text-white/80">${c.cat}</h4>
+              <p class="text-[9px] text-white/20 uppercase tracking-[0.2em] mt-1">${c.desc}</p>
+            </div>
+            <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x px-1">
+              ${c.vids.map(id=>`
+                <div onclick="playVideo('${id}','${c.cat}')" class="flex-shrink-0 w-56 aspect-video rounded-xl bg-white/5 relative overflow-hidden group cursor-pointer snap-start border border-white/5 hover:border-dynamic/30 transition-all">
+                  <img src="https://img.youtube.com/vi/${id}/mqdefault.jpg" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition duration-500">
+                  <div class="absolute inset-0 bg-black/40 group-hover:bg-transparent transition"></div>
+                  <div class="absolute bottom-3 left-3 right-3 flex justify-between items-end">
+                    <div class="px-2 py-1 bg-black/60 backdrop-blur rounded text-[8px] font-bold uppercase text-white/70 border border-white/5">
+                      ${stats[id] ? '<span class="text-dynamic">Visto</span>' : 'Sintonizar'}
+                    </div>
+                    <div class="w-6 h-6 rounded-full bg-white/10 backdrop-blur flex items-center justify-center group-hover:bg-dynamic group-hover:text-black transition duration-500 border border-white/10 group-hover:border-transparent">
+                      <i data-lucide="play" class="w-3 h-3 fill-current ml-0.5"></i>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('dt-watched-count').innerText = Object.keys(stats).length;
+        lucide.createIcons();
+      }
+    };
+
+    // ====== Player ======
+    function playVideo(id, cat){
+      document.getElementById('player-overlay').classList.replace('hidden','flex');
+      document.getElementById('yt-embed').innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1&rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      let stats = JSON.parse(localStorage.getItem(KEYS.STATS) || '{}');
+      stats[id] = { ts: Date.now(), cat };
+      localStorage.setItem(KEYS.STATS, JSON.stringify(stats));
+      DualTube.render();
+    }
+    function closePlayer(){ document.getElementById('player-overlay').classList.replace('flex','hidden'); document.getElementById('yt-embed').innerHTML = ''; }
+
+    // ====== Modal & Toast Utils ======
+    const Modal = {
+      show:(html)=>{
+        const overlay = document.getElementById('modal-overlay');
+        const content = document.getElementById('modal-content');
+        content.innerHTML = html; overlay.classList.replace('hidden','flex');
+        setTimeout(()=>{ content.classList.replace('scale-90','scale-100'); content.classList.replace('opacity-0','opacity-100'); },10);
+        lucide.createIcons();
+      },
+      hide:()=>{ const overlay=document.getElementById('modal-overlay'); const content=document.getElementById('modal-content'); content.classList.replace('scale-100','scale-90'); content.classList.replace('opacity-100','opacity-0'); setTimeout(()=>overlay.classList.replace('flex','hidden'),300);}
+    };
+
+    function toast(m, time=3000){
+      const t = document.getElementById('di_toast');
+      const d = document.createElement('div');
+      d.className = "glass-pill bg-black/80 border-dynamic/30 px-6 py-3 shadow-2xl backdrop-blur-xl text-[10px] font-bold uppercase tracking-[0.15em] text-dynamic animate-[float_4s_ease-in-out_infinite]";
+      d.innerText = m;
+      t.appendChild(d);
+      setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),500); }, time);
+    }
+
+    // ====== Persistence helpers ======
+    function saveCortex(){ localStorage.setItem(KEYS.CORTEX, JSON.stringify(APP_STATE.cortex)); }
+    function saveTriad(){ localStorage.setItem(KEYS.TRIAD, JSON.stringify(APP_STATE.triad)); }
+
+    // ====== Safe text setter (evita erros caso elemento não exista em variações de layout) ======
+    function safeSetText(id, text){ try{ const el = document.getElementById(id); if(el) el.innerText = text; }catch(e){console.warn('DOM missing',id)} }
+
+    // ====== Infodose modal & apply training ======
+    function applyInfodoseTraining(){
+      try{
+        const activeArch = APP_STATE.currentArchetype;
+        localStorage.setItem(KEYS.TRAIN_TXT, INFODOSE_TRAINING_TEXT);
+        toast(`Treinamento A.Infodose aplicado (${activeArch || 'NEUTRO'})`);
+        const script = INFODOSE_MICRO_SCRIPTS[activeArch] || {open:'Ative o arquétipo.'};
+        const prompt = `[ATIVAR: ${activeArch || 'NEUTRO'}]\n[SCRIPT]: ${script.open}`;
+        navigator.clipboard.writeText(prompt);
+      }catch(e){ toast('Falha ao aplicar treino'); }
+    }
+
+    function showInfodoseModal(){
+      const id='infodose-modal';
+      if(document.getElementById(id)) document.getElementById(id).remove();
+      const m = document.createElement('div'); m.id=id;
+      m.style.position='fixed'; m.style.left='50%'; m.style.top='10%'; m.style.transform='translateX(-50%)';
+      m.style.zIndex=3000; m.style.width='min(920px,92vw)'; m.style.maxHeight='80vh'; m.style.overflow='auto'; m.style.background='rgba(10,10,12,0.95)';
+      m.style.backdropFilter='blur(20px)'; m.style.border='1px solid rgba(255,255,255,0.1)'; m.style.borderRadius='16px'; m.style.padding='24px';
+      const currentVoice = APP_STATE.currentArchetype || 'NEUTRO';
+      m.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px">
+        <div><strong class="text-lg text-white">Matriz de Treinamento (${currentVoice})</strong><p class="text-[10px] text-white/40 uppercase tracking-widest mt-1">Sincronizado com Archetype System</p></div>
+        <div style="display:flex;gap:8px">
+          <button class="glass-pill bg-active-color/10 text-dynamic border-dynamic/30" id="infodose-apply-btn">Aplicar ao Haski</button>
+          <button class="glass-pill hover:bg-white/10" id="infodose-close-btn">Fechar</button>
+        </div></div>
+        <div class="custom-scroll" style="background:rgba(0,0,0,0.3); border-radius:8px; padding:16px; height:300px; overflow-y:auto; font-family:monospace; font-size:12px; color:rgba(255,255,255,0.7); white-space:pre-wrap; border:1px solid rgba(255,255,255,0.05); margin-bottom:20px;">${escapeHtml(INFODOSE_TRAINING_TEXT)}</div>
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,0.4); margin-bottom:8px">Mudar Arquétipo Global</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;" id="infodose-voices"></div>`;
+      document.body.appendChild(m);
+
+      const voicesDiv = document.getElementById('infodose-voices');
+      voicesDiv.innerHTML = Object.keys(ARCHETYPES_DB).map(k=>`<button class="infodose-voice-btn glass-pill text-[9px]" data-voice="${k}" style="border-color:${ARCHETYPES_DB[k].colors.main}">${k}</button>`).join('');
+      voicesDiv.querySelectorAll('button').forEach(b=>{
+        b.addEventListener('click', ev=>{
+          const v = ev.currentTarget.dataset.voice;
+          ArchetypeSystem.set(v);
+          toast('Arquétipo Ativo: ' + v);
+          showInfodoseModal(); // refresh
+        });
+      });
+      document.getElementById('infodose-apply-btn').addEventListener('click', applyInfodoseTraining);
+      document.getElementById('infodose-close-btn').addEventListener('click', ()=>m.remove());
+    }
+
+    // Floating Infodose quick button
+    (function createInfodoseButton(){
+      setTimeout(()=>{
+        if(document.getElementById('infodose-quick-btn')) return;
+        const btn = document.createElement('div'); btn.id='infodose-quick-btn';
+        btn.style.position='fixed'; btn.style.left='50%'; btn.style.transform='translateX(-50%)'; btn.style.top='110px'; btn.style.zIndex=45;
+        btn.innerHTML = `<button onclick="showInfodoseModal()" class="glass-pill w-10 h-10 flex items-center justify-center rounded-full border-dynamic/20 text-dynamic hover:bg-white/10 transition cursor-pointer shadow-2xl backdrop-blur-md">💊</button>`;
+        document.body.appendChild(btn); lucide.createIcons();
+      }, 800);
+    })();
+
+    // ====== Helpers ======
+    function escapeHtml(s){ return (s+'').replace(/[&<>"']/g,function(m){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])}); }
+
+    // ====== Storage load / init ======
+    function loadSystem(){
+      try{
+        const saved = localStorage.getItem(KEYS.CORTEX);
+        APP_STATE.cortex = saved ? JSON.parse(saved) : { crystals: [], matrices: [] };
+      }catch(e){ APP_STATE.cortex = { crystals: [], matrices: [] }; }
+
+      try{ const t = localStorage.getItem(KEYS.TRIAD); if(t) APP_STATE.triad = JSON.parse(t); }catch(e){}
+      try{ const arch = localStorage.getItem(KEYS.ARCHETYPE); if(arch) APP_STATE.currentArchetype = arch; }catch(e){}
+      const user = localStorage.getItem(KEYS.USER) || 'Piloto';
+      document.getElementById('displayUserHeader').innerText = user.toUpperCase();
+      // if no matrices exist create a fallback
+      if(!Array.isArray(APP_STATE.cortex.matrices) || APP_STATE.cortex.matrices.length===0){
+        APP_STATE.cortex.matrices = [{ id:'m'+Date.now(), name:'Treino Primário', content:'Diretrizes iniciais do sistema...', active:true }];
+        saveCortex();
+      }
+    }
+
+    // ====== utility: set initial demo memory if empty ======
+    function ensureDemoCortex(){
+      if(!APP_STATE.cortex.crystals || APP_STATE.cortex.crystals.length===0){
+        APP_STATE.cortex.crystals = [{ id:1, content:"O equilíbrio precede a performance.", tags:["filosofia"], archetype:"VITALIS", pinned:true }];
+        saveCortex();
+      }
+    }
+
+    // ====== page init ======
+    window.addEventListener('load', async ()=>{
+      lucide.createIcons();
+      await MetaPulso.init();
+      loadSystem(); ensureDemoCortex();
+      setupGestures();
+      Cortex.render();
+      DualTube.render();
+      MetaPulso.updateUI();
+      ArchetypeSystem.init();
+      Navigation.to(1);
+
+      setTimeout(()=>{
+        const user = localStorage.getItem(KEYS.USER) || 'Piloto';
+        toast(`Sistema Fusion v27 Iniciado. Olá, ${user}.`);
+      }, 1200);
+
+      initFloatingButton(); // small UI init
+      initFloatingVoice(); // optional UX
+    });
+
+    // floating / cosmetic helpers
+    function initFloatingButton(){
+      // already created infodose quick btn above; this ensures lucide icons update
+      lucide.createIcons();
+    }
+    function initFloatingVoice(){
+      // welcome TTS (if supported) using stored name
+      setTimeout(()=>{
+        const name = localStorage.getItem(KEYS.INFODOSE_NAME) || localStorage.getItem(KEYS.USER) || 'Piloto';
+        const arch = APP_STATE.currentArchetype;
+        const msg = arch ? `Bem-vindo de volta, ${name}. Arquétipo ${arch} sincronizado.` : `Bem-vindo, ${name}. Sistema em repouso.`;
+        toast(msg);
+        if('speechSynthesis' in window){
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(msg); u.lang='pt-BR'; u.rate=1.05; u.volume=0.85; window.speechSynthesis.speak(u);
+        }
+      }, 1400);
+    }
+
+    // ====== small DOM-safe setter helpers (used earlier) ======
+    // Already defined safeSetText.
+
+    /************************************************************************
+     * Expose functions to global scope (convenience)
+     ************************************************************************/
+    window.Cortex = Cortex;
+    window.MetaPulso = MetaPulso;
+    window.ArchetypeSystem = ArchetypeSystem;
+    window.Navigation = Navigation;
+    window.playVideo = playVideo;
+    window.closePlayer = closePlayer;
+    window.applyInfodoseTraining = applyInfodoseTraining;
+    window.showInfodoseModal = showInfodoseModal;
+    window.di_setActiveArchetype = (k)=>ArchetypeSystem.set(k);
+    window.di_getActiveArchetype = ()=> APP_STATE.currentArchetype;
+
+  </script>
+</body>
+</html>
